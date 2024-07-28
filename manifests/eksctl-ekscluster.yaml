@@ -1,0 +1,53 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: my-knative-cluster
+  region: us-east-1
+
+availabilityZones: ['us-east-1d', 'us-east-1f']
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+  - metadata:
+      name: cluster-autoscaler
+      namespace: kube-system
+      labels: {aws-usage: "cluster-ops"}
+    wellKnownPolicies:
+      autoScaler: true
+    roleName: eksctl-knative-cluster-autoscaler-role
+    roleOnly: true
+
+managedNodeGroups:
+  - name: knative-private-ng
+    instanceType: m5.large
+    privateNetworking: true
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        certManager: true
+        ebs: true
+        efs: false
+        cloudWatch: true
+        albIngress: true
+        externalDNS: true
+    minSize: 3
+    maxSize: 15
+    desiredCapacity: 3
+    volumeSize: 150
+    ssh:
+      allow: false
+    labels: {
+      role: worker,
+      subnetType: private
+      }
+    tags:
+      nodegroup-role: worker
+      subnetType: private
+      environment: dev
+
+vpc:  
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: true
