@@ -1,0 +1,22 @@
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  annotations:
+    # case-sensitive
+    eventing.knative.dev/broker.class: Kafka
+  name: knative-kafka-broker
+  namespace: my-knative-services
+spec:
+  # Configuration specific to this broker.
+  config:
+    apiVersion: v1
+    kind: ConfigMap
+    name: kafka-broker-config
+    namespace: knative-eventing
+  delivery:
+    deadLetterSink:
+      ref:
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        name: knative-kafka-dlq
+        namespace: my-knative-services
