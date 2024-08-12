@@ -1,0 +1,16 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: simple-service
+  namespace: my-knative-services
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+    spec:
+      containers:
+        - image: ghcr.io/pksurferdad/knative-microservices/simple-service:latest
+          name: simple-service
+          command: ["/bin/bash", "-ec"]
+          args: ["exec gunicorn --bind :$PORT --workers 1 --threads 8 service:app"]

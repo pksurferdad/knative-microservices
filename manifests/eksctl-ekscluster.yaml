@@ -32,8 +32,8 @@ managedNodeGroups:
         cloudWatch: true
         albIngress: true
         externalDNS: true
-    minSize: 3
-    maxSize: 15
+    minSize: 2
+    maxSize: 5
     desiredCapacity: 3
     volumeSize: 150
     ssh:
