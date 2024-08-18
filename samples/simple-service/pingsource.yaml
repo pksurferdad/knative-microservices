@@ -1,0 +1,13 @@
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: simple-service-pingsource
+  namespace: my-knative-services
+spec:
+  timezone: America/New_York
+  schedule: "0 10 * * *"
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: simple-service

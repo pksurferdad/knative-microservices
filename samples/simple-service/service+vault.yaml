@@ -1,8 +1,8 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: bulk-resolve-hb-faults
-  namespace: molecule-<NAMESPACE>
+  name: simple-service-with-vault
+  namespace: my-knative-services
 spec:
   template:
     metadata:
@@ -11,9 +11,9 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "app-user"
         vault.hashicorp.com/tls-skip-verify: "true"
-        vault.hashicorp.com/agent-inject-secret-env-config.env: "secrets/mfunctions-<VAULTSPACE>/env-config"
-        vault.hashicorp.com/agent-inject-template-env-config.env: |
-          {{- with secret "secrets/mfunctions-<VAULTSPACE>/env-config" -}}
+        vault.hashicorp.com/agent-inject-secret-my-secret.env: "secrets/my-secret"
+        vault.hashicorp.com/agent-inject-template-my-secret.env: |
+          {{- with secret "secrets/my-secret" -}}
           {{ range $key, $value := .Data -}}
           export {{ $key }}="{{ $value }}"
           {{ end }}
@@ -23,11 +23,11 @@ spec:
         - name: docker-json
       serviceAccountName: vault-auth
       containers:
-        - image: registry.molecule.io/m.functions/bulk-resolve-hb-faults:<VERSION>
-          name: bulk-resolve-hb-faults
+        - image: ghcr.io/pksurferdad/knative-microservices/simple-service:latest
+          name: simple-service-with-vault
           command: ["/bin/bash", "-ec"]
-          args: ["source /vault/secrets/env-config.env &&
+          args: ["source /vault/secrets/my-secret.env &&
                   exec gunicorn --bind :$PORT --workers 1 --threads 8 service:app"]
           env:
-          - name: honeybadger_check_in
-            value: https://api.honeybadger.io/v1/check_in/aNIj0p
+          - name: VARIABLE_NAME
+            value: VARIABLE_VALUE
