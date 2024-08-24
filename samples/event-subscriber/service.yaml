@@ -1,7 +1,7 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: event-handler
+  name: event-subscriber
   namespace: my-knative-services
 spec:
   template:
@@ -23,7 +23,7 @@ spec:
         - name: docker-json
       serviceAccountName: vault-auth
       containers:
-        - image: ghcr.io/pksurferdad/knative-microservices/event-handler:latest
+        - image: ghcr.io/pksurferdad/knative-microservices/event-subscriber:latest
           name: event-handler
           command: ["/bin/bash", "-ec"]
           args: ["source /vault/secrets/my-secrets.env &&
