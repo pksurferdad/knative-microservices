@@ -1,4 +1,4 @@
-## Article: Building Microservices Using Knative
+## Building Microservices Using Knative
 
 ### Overview
 
@@ -838,8 +838,23 @@ curl --location 'https://event-handler.my-knative-services.knative.example.com' 
 }'
 ```
 
+To ensure everything worked as expected, you can use the kubectl command below to tail the logs of both the `event handler` and the `event subscriber`.
+
+```
+kubectl logs -f <event handler pod> -c event-handler -n my-knative-services
+kubectl logs -f <event subscriber pod> -c event-subscriber -n my-knative-services
+```
+
 ### Section 6: Case Study
-Write up our data integration pattern of `data source adapter` to a commodity exchange or market data provider with a cloud event and trigger to a `transformation service` with a cloud event and trigger to a `kafka producer` to a topic with a `kafka consumer` that writes to the molecule `app`
+
+At [Molecule](www.molecule.io), where I'm responsible for software and platform engineering, we utilize the eventing pattern described in this article to support integrations we do with 3rd party data providers that connect to the provider, send the data to a transformation service, and writes the data to our core SaaS application utilizing our REST API. 
+
+```mermaid
+graph LR
+    A[Data Provider] --> B[Event Handler]
+    B --> C[Transformation Service]
+    C --> D[Molecule SaaS Application]
+```
 
 1. **Real-world Example**
    - Detailed case study of a company or project using Knative for microservices
