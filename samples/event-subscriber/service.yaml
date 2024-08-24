@@ -7,7 +7,7 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "3"
+        autoscaling.knative.dev/minScale: "1"
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "app-user"
         vault.hashicorp.com/tls-skip-verify: "true"

@@ -18,6 +18,7 @@ def main():
     event_message = request.get_json(force=True)
 
     # do something with the event message
+    log.info('Received event message: {}'.format(json.dumps(event_message)))
 
     response = {
     'success' : True,
