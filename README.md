@@ -54,13 +54,13 @@ Knative Eventing provides the plumbing to support event-driven and message-based
 
 ### Section 2: Setting Up Your Environment
 
-Let's start with setting up the required infrastructure components to deploy, execute, and manage a Knative service.  
+Let's start with setting up the required infrastructure components to deploy, execute, and manage a Knative service.  The manifests referenced below are also available at [GitHub](https://github.com/pksurferdad/knative-microservices/blob/main/manifests/).
 
 1. **Prerequisites**
    
    We will utilize [AWS EKS](https://aws.amazon.com/eks/) to host our infrastructure components on Kubernetes (K8s).  The simplest method to create a k8s cluster on AWS is to utilize [eksctl](https://eksctl.io/) following this [guidance](https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html) from AWS.  
    
-   Below is a sample `eksctl` manifest to create and EKS cluster with an associated managed node group, also available at [GitHub](https://github.com/pksurferdad/knative-microservices/blob/main/manifests/eksctl-ekscluster.yaml).
+   Below is a sample `eksctl` manifest to create and EKS cluster with an associated managed node group.
 
 ```
 
@@ -162,7 +162,7 @@ kucectl create ns my-knative-services
 kubectl label ns my-knative-services networking.knative.dev/disableWildcardCert=false
 ```
 
-  * Then, create a cluster-wide `cluster issuer` utilizing lets-encrypt as the certificate provider.  Below is a sample cluster issuer utilizing AWS Route53, also available at [GitHub](https://github.com/pksurferdad/knative-microservices/blob/main/manifests/cluster-issuer.yaml).
+  * Then, create a cluster-wide `cluster issuer` utilizing lets-encrypt as the certificate provider.  Below is a sample cluster issuer utilizing AWS Route53.
 
 ```
 apiVersion: cert-manager.io/v1
@@ -202,7 +202,17 @@ Now, let's install Knative Eventing following this [general guidance](https://kn
 
 The diagram below provides an overview of the Eventing workflow that will be further illustrated with samples later in this article.
 
-![Knative Eventing](https://raw.githubusercontent.com/pksurferdad/knative-microservices/main/references/knative-broker.png "Knative Eventing")
+```mermaid
+graph LR    
+    A[Event Producer 1] --> C[Broker]
+    B[Event Producer 2] --> C[Broker]
+    C --> D[Trigger 1]
+    C --> E[Trigger 2]
+    C --> F[Trigger 3]
+    D --> G[Subscriber 1]
+    E --> H[Subscriber 2]
+    F --> G[Subscriber 1]
+```
 
 3. **Installing / Configuring Confluent Cloud**
 
@@ -269,7 +279,7 @@ data:
   auth.secret.ref.name: ccloud
 ```
 
-3. Configure the [default broker](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#optional-install-a-broker-layer) implementation by applying the manifest below, also available at [GitHub](https://github.com/pksurferdad/knative-microservices/blob/main/manifests/kafka-broker-defaults.yaml).
+3. Configure the [default broker](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#optional-install-a-broker-layer) implementation by applying the manifest below.
 
 ```
 apiVersion: v1
@@ -294,7 +304,10 @@ data:
         namespace: knative-eventing  
 ```
 
-4. **Installing / Configuring Hashicorp Vault**
+4. Install and configure the [kafka sink](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#optional-install-a-broker-layer) implementation which we'll describe in more detail later in this article, but in short, this Knative Eventing add-on will allow us to write cloud events to a Kafka topic hosted in our Confluent Cloud cluster.  The Kafka Controller has already been installed and only the [KafkaSink Data Plane](https://knative.dev/docs/eventing/sinks/kafka-sink/#installation) is required at this point.
+
+
+5. **Installing / Configuring Hashicorp Vault**
    
 It is beyond the scope of this article to cover all the capabilities of Hashicorp Vault; however, this article will demonstrate how to utilize Vault to provide secrets and configuration settings to Knative services.  Vault can be installed as a self-managed service in your own [K8s cluster](https://developer.hashicorp.com/vault/docs/platform/k8s/helm) or you can utilize Hashicorp's [hosted solution](https://portal.cloud.hashicorp.com/).
 
@@ -498,7 +511,17 @@ spec:
 
 In this section of the article, we will focus on on how to implement Knative services that support the [cloudevents](https://cloudevents.io/) specification.  As mentioned previously, the diagram below illustrates the workflow of cloud events:
 
-![Knative Eventing](https://raw.githubusercontent.com/pksurferdad/knative-microservices/main/references/knative-broker.png "Knative Eventing").
+```mermaid
+graph LR    
+    A[Event Producer 1] --> C[Broker]
+    B[Event Producer 2] --> C[Broker]
+    C --> D[Trigger 1]
+    C --> E[Trigger 2]
+    C --> F[Trigger 3]
+    D --> G[Subscriber 1]
+    E --> H[Subscriber 2]
+    F --> G[Subscriber 1]
+```
 
 We'll demonstrate the capabilities of Knative Eventing by implementing an event handler that publishes events which are picked up by an event subscriber.  All the resources mentioned in this section are available at [GitHub](https://github.com/pksurferdad/knative-microservices/tree/main/samples).  The pattern of event producer and event subscriber provides the foundation for implementing a variety of event based applications and services. Later in the article, we'll demonstrate a real-world example using this pattern.
 
@@ -793,7 +816,7 @@ spec:
 
 3. **Event Trigger**
 
-We now have the `event handler` and the `event subscriber`, but how do we now connect the two together.  Introducing the Knative Eventing [trigger](https://knative.dev/docs/eventing/triggers/#example-triggers).  Using the Knative Broker we created earlier, the Knative trigger will instruct the Knative Broker to publish events to the `event-subscriber` service for events that have a `type` of `event-subscriber-type` and a `source` of `event-subscriber-source`.
+We now have the `event handler` and the `event subscriber`, but how do we now connect the two together?  Introducing the Knative Eventing [trigger](https://knative.dev/docs/eventing/triggers/#example-triggers).  Using the Knative Broker we created earlier, the Knative trigger will instruct the Knative Broker to publish events to the `event-subscriber` service for events that have a `type` of `event-subscriber-type` and a `source` of `event-subscriber-source`.
 
 Apply the manifest below to deploy the trigger.
 
@@ -845,15 +868,209 @@ kubectl logs -f <event handler pod> -c event-handler -n my-knative-services
 kubectl logs -f <event subscriber pod> -c event-subscriber -n my-knative-services
 ```
 
+5. **Incorporate the KafkaSink Add-on**
+
+Earlier in this article, we installed the KafkaSink add-on. This add-on gives us the ability to reliably publish cloud events to a Kafka topic hosted on our Confluent Cloud kafka cluster.  In this section of the article, we'll set up an instance of the KafkaSink add-on and incorporate the add-on in a Knative Service that publishes a cloud event to a Kafka topic.
+
+**Configure the KafkaSink Add-on**
+
+Let's first configure and create a KafkaSink resource using the manifest below.  Before applying the manifest, you can manually create the `mytopic` in the Confluent Cloud cluster.
+
+```
+apiVersion: eventing.knative.dev/v1alpha1
+kind: KafkaSink
+metadata:
+   name: my-kafka-sink
+   namespace: my-knative-services
+spec:
+   topic: mytopic
+   bootstrapServers:
+      - "GetFromConfluentCloud"
+   auth.secret.ref.name: ccloud
+```
+
+To get the URL to the `KafkaSink` resource, run the kubectl command below.  
+
+```
+kubectl get kafkasink -n knative-eventing
+```
+
+The `KafkaSink` URL should look something like `http://kafka-sink-ingress.knative-eventing.svc.cluster.local/my-knative-services/my-kafka-sink`.
+
+**Sample Service Using the KafkaSink Add-on**
+
+The Knative Service below is a variant of the `event subscriber` service, but with the addition of publishing an event to a Kafka topic using the `KafkaSink` resource we created above.  Note that the service takes an environment variable `KAFKA_SINK_URL` which is the URL we got from the above kubectl command.  
+
+```
+
+import json
+import requests
+import os
+from flask import Flask, request, jsonify
+from flask.logging import create_logger
+from werkzeug.datastructures import Headers
+from werkzeug.exceptions import HTTPException
+from cloudevents.http import CloudEvent, to_structured 
+
+# flask app configuration
+app = Flask(__name__)
+log = create_logger(app)
+log.setLevel(os.environ.get('LOG_LEVEL', 'DEBUG'))
+
+# environment variables
+KAFKA_SINK_URL = os.environ.get('KAFKA_SINK_URL', None)
+headers = {'content-type': 'application/json'}
+
+@app.route('/', methods=['POST'])
+def main():
+    # process the request message and send it to the knative kafka sink resource
+    event_headers = request.headers
+    event_message = request.get_json(force=True)
+
+    # do something with the event message
+    log.info('event message: {}'.format(event_message))
+    
+    # build the event and http request
+    attributes = {
+        'type' : 'dev.kafka.type',
+        'source' : 'dev.kafka.source'
+    }
+
+    event = CloudEvent(attributes,event_message)
+    headers, body = to_structured(event)
+
+    # send the event to the kafka-sink-url
+    resp = requests.post(KAFKA_SINK_URL, headers=headers, data=body)
+    log.info('response code: {}'.format(resp.status_code))
+
+    if resp.status_code != 202:
+        raise RuntimeError(str(resp.status_code) + ' ' + resp.text)
+
+    return '', 200
+    
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    log.error('HTTP Exception: {}'.format(e))
+    response = {
+        'success': False,
+        'error': {
+            'type': e.name,
+            'message': e.description,
+        }
+    }    # replace the body with JSON
+    return jsonify(response), e.code
+
+
+@app.errorhandler(RuntimeError)
+def handle_runtime_error(error):
+    message = [str(x) for x in error.args]
+    log.error(message)
+    response = {
+        'success': False,
+        'error': {
+            'type': error.__class__.__name__,
+            'message': message
+        }
+    }
+
+    return jsonify(response), 422
+
+
+@app.errorhandler(Exception)
+def unhandled_exception(error):
+    log.error('Unhandled Exception: {}'.format(error))
+    response = {
+        'success': False,
+        'error': {
+            'type': error.__class__.__name__,
+            'message': 'An unexpected error has occurred.',
+        }
+    }
+
+    return jsonify(response), 500
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+```
+
+**Deploy the Event Subscriber with Sink Service**
+
+You can use the manifest below to deploy the event subscriber with the added KafkaSink support.  Note that if you are using Hashicorp Vault integration, the `KAFKA_SINK_URL` is in the `my-secrets` secret.
+
+```
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: event-subscriber-with-sink
+  namespace: my-knative-services
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "app-user"
+        vault.hashicorp.com/tls-skip-verify: "true"
+        vault.hashicorp.com/agent-inject-secret-my-secrets.env: "secrets/my-secrets"
+        vault.hashicorp.com/agent-inject-template-my-secrets.env: |
+          {{- with secret "secrets/my-secrets" -}}
+          {{ range $key, $value := .Data -}}
+          export {{ $key }}="{{ $value }}"
+          {{ end }}
+          {{- end -}}
+    spec:      
+      imagePullSecrets:
+        - name: docker-json
+      serviceAccountName: vault-auth
+      containers:
+        - image: ghcr.io/pksurferdad/knative-microservices/event-subscriber-with-sink:latest
+          name: event-handler
+          command: ["/bin/bash", "-ec"]
+          args: ["source /vault/secrets/my-secrets.env &&
+                  exec gunicorn --bind :$PORT --workers 1 --threads 8 service:app"]
+```
+
+**Event Trigger with Sink**
+
+Use the trigger below to connect the `event handler` to the `event subscriber with sink` service.
+
+```
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: event-subscriber-with-sink-trigger
+  namespace: my-knative-services
+spec:
+  broker: knative-kafka-broker
+  filter:
+    attributes:
+      type: event-subscriber-type
+      source: event-subscriber-source
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-subscriber-with-sink
+
+```
+
 ### Section 6: Case Study
 
-At [Molecule](www.molecule.io), where I'm responsible for software and platform engineering, we utilize the eventing pattern described in this article to support integrations we do with 3rd party data providers that connect to the provider, send the data to a transformation service, and writes the data to our core SaaS application utilizing our REST API. 
+Now, let's bring this all together with a real-world case study. At [Molecule](https://www.molecule.io), where I'm responsible for software and platform engineering, we utilize the eventing pattern described in this article to support integrations we do with 3rd party data providers that connect to the provider, send the data to a transformation service, and writes the data to our core SaaS application utilizing our REST API. 
 
 ```mermaid
 graph LR
     A[Data Provider] --> B[Event Handler]
-    B --> C[Transformation Service]
-    C --> D[Molecule SaaS Application]
+    B --> C[Transformation Service 1]
+    B --> D[Transformation Service 2]
+    C --> E[Kafka Topic 1]
+    D --> F[Kafka Topic 2]
+    E --> G[Kafka Consumer 1]
+    F --> H[Kafka Consumer 2]
+    G --> I[Molecule SaaS App]
+    H --> I[Molecule SaaS App]
 ```
 
 1. **Real-world Example**

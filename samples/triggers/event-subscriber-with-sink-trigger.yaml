@@ -1,0 +1,17 @@
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: event-subscriber-with-sink-trigger
+  namespace: my-knative-services
+spec:
+  broker: knative-kafka-broker
+  filter:
+    attributes:
+      type: event-subscriber-type
+      source: event-subscriber-source
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-subscriber-with-sink
+  

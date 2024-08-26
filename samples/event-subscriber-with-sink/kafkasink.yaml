@@ -1,0 +1,10 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: KafkaSink
+metadata:
+   name: my-kafka-sink
+   namespace: my-knative-services
+spec:
+   topic: mytopic
+   bootstrapServers:
+      - "GetFromConfluentCloud"
+   auth.secret.ref.name: ccloud 

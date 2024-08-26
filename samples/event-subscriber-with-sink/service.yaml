@@ -1,0 +1,31 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: event-subscriber-with-sink
+  namespace: my-knative-services
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "app-user"
+        vault.hashicorp.com/tls-skip-verify: "true"
+        vault.hashicorp.com/agent-inject-secret-my-secrets.env: "secrets/my-secrets"
+        vault.hashicorp.com/agent-inject-template-my-secrets.env: |
+          {{- with secret "secrets/my-secrets" -}}
+          {{ range $key, $value := .Data -}}
+          export {{ $key }}="{{ $value }}"
+          {{ end }}
+          {{- end -}}
+    spec:      
+      imagePullSecrets:
+        - name: docker-json
+      serviceAccountName: vault-auth
+      containers:
+        - image: ghcr.io/pksurferdad/knative-microservices/event-subscriber-with-sink:latest
+          name: event-handler
+          command: ["/bin/bash", "-ec"]
+          args: ["source /vault/secrets/my-secrets.env &&
+                  exec gunicorn --bind :$PORT --workers 1 --threads 8 service:app"]
+          
