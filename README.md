@@ -233,7 +233,8 @@ kubectl create secret --namespace knative-eventing generic ccloud \
   --from-literal=password=<API SECRET>
 ```
 
-2. Create a [Kafka broker](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#optional-install-a-broker-layer) which will auto-create a topic in Confluent.  Also available at [GitHub](https://github.com/pksurferdad/knative-microservices/blob/main/manifests/kafa-broker.yaml).
+2. Create a [Kafka broker](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#optional-install-a-broker-layer) which will auto-create a topic in Confluent.
+
    * Note the reference below to a `kafka-knative-dlq`, this is a Knative service that can be implemented to handle messages and events that fail to be delivered to their target destination.
 
 ```
@@ -261,7 +262,7 @@ spec:
         namespace: my-knative-services
 ```
 
-* Create the broker config map, also available at [GitHub](https://github.com/pksurferdad/knative-microservices/blob/main/manifests/kafa-broker-config.yaml). Note the end-point to the bootstrap server is provided by Confluent Cloud
+* Create the broker config map. Note the end-point to the bootstrap server is provided by Confluent Cloud
 
 ```
 apiVersion: v1
