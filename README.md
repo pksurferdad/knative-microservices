@@ -395,17 +395,18 @@ if __name__ == "__main__":
 ```
 
 **YAML Configuration to Deploy the Service**
+
 To deploy the service, apply the YAML file below.  Note that the `kind` is a service; however, the manifest represents a Knative Custom Resource Definition (ksvc) that implements all the necessary kubernetes resources, listed below, to manage the full lifecycle and execution of a Knative microservice
 
-Knative Service
-   ├── Configuration
-   │     └── Revision(s)
-   ├── Route
-   ├── PodAutoscaler
-   ├── Ingress
-   ├── Service (Kubernetes Service)
-   ├── Deployment
-   └── Pods
+```mermaid
+   graph TD    
+    A[Knative Service] --> B[Configuration]
+    B --> C[PodAutoscaler]
+    C --> D[Ingress]
+    D --> F[K8s Service]
+    F --> G[Deployment]
+    G --> H[Pods]
+```
 
 Note the annotation `autoscaling.knative.dev/minScale: "0"` which allows a knative service to scale to 0, meaning the service will be terminated after a period of time, but will activate when a request is made against the service.  A nice way to save on Kubernetes resources.  `minScale` is one of many annotations that Knative provides to manage scaling of Knative services.  Others can be found in the Knative docs under [autoscaling](https://knative.dev/docs/serving/autoscaling/).
 
@@ -842,7 +843,7 @@ spec:
 Run the kubectl command below to ensure the trigger is in a ready state.
 
 ```
-kubectl get trigger `event-subscriber-trigger` -n my-knative-services
+kubectl get trigger event-subscriber-trigger -n my-knative-services
 ```
 
 4. **Test the Event Workflow**
@@ -874,7 +875,7 @@ Earlier in this article, we installed the KafkaSink add-on. This add-on gives us
 
 **Configure the KafkaSink Add-on**
 
-Let's first configure and create a KafkaSink resource using the manifest below.  Before applying the manifest, you can manually create the `mytopic` in the Confluent Cloud cluster.
+Let's first configure and create a KafkaSink resource using the manifest below.  Before applying the manifest, you can manually create the `mytopic` topic in the Confluent Cloud cluster.
 
 ```
 apiVersion: eventing.knative.dev/v1alpha1
@@ -1058,7 +1059,7 @@ spec:
 
 ### Section 6: Case Study
 
-Now, let's bring this all together with a real-world case study. At [Molecule](https://www.molecule.io), where I'm responsible for software and platform engineering, we utilize the eventing pattern described in this article to support integrations we do with 3rd party data providers that connect to the provider, send the data to a transformation service, and writes the data to our core SaaS application utilizing our REST API. 
+Now that we have all the building blocks for building out event-based microservices, let's bring this all together with a real-world case study. At [Molecule](https://www.molecule.io), where I'm responsible for software and platform engineering, we utilize the eventing pattern described in this article to support integrations we do with 3rd party data providers that implements the workflow depicted below. 
 
 ```mermaid
 graph LR
@@ -1073,20 +1074,26 @@ graph LR
     H --> I[Molecule SaaS App]
 ```
 
-1. **Real-world Example**
-   - Detailed case study of a company or project using Knative for microservices
-   - Lessons learned and outcomes
+**Data Provider** 
+
+The `data provider` is the component that connects to the data source, in Molecule's case, typically commodity trade or commodity pricing data, utilizing the data provider's API.  The data provider component fetches the data and calls the `event handler` including the `ce-source` and `ce-type` in the request header and the payload in the request body.
+
+**Event Handler**
+
+As described in this article, the `event handler` will package up the cloud event and post the event to the Knative event broker which will route the event to the `event subscriber` based in the configuration in the Knative trigger.  
+
+**Transformation Service**
+
+In this use case, the `transformation service` is the event subscriber that will receive the event with the payload from the `data provider` component.  Based on mapping configurations, the transformation service will transform attributes of the source payload to attribute formats and structures required by the Molecule SaaS application.  Utilizing the KafkaSink resource, the transformation services publishes the event to the sink end-point which persists the event to the configured Kafka topic hosted on our Confluent Cloud cluster.
+
+**Kafka Consumer**
+
+Within the Molecule application boundary, Molecule implements multiple Kafka consumers that subscribe to the Kafka topics to pull and post the trade and market data to the Molecule SaaS application.
+
+**Molecule SaaS App**
+
+The Molecule SaaS application then does its part with the data providing Commodity Trading and Risk Management services to our customers.   
 
 ### Conclusion
-1. **Summary of Key Points**
-   - Recap of the benefits of using Knative for microservices
-   - Encouragement to explore further
 
-2. **Further Resources**
-   - Links to Knative documentation, tutorials, and community resources
-   - Suggested readings and tools for advanced learning
-
-### Call to Action
-1. **Engagement**
-   - Invite readers to share their experiences and questions in the comments
-   - Provide contact information or forum links for further discussion
+Hopefully this article has provided the reader with some guidance and direction on how to implement, deploy, and manage Knative Services to support business critical event-based applications running on reliable technology.  The patterns outlined in this article can be used for a variety of use cases and business problems.  If you have any questions or run into any issues with the samples that are published in this article, feel free to reach out to me at paul@molecule.io or post an issue to the [GitHub project](https://github.com/pksurferdad/knative-microservices/issues).
