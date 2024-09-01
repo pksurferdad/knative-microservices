@@ -2,7 +2,7 @@
 
 ### Overview
 
-In this article, we will explore the development, implementation, and deployment of microservices using Knative, a powerful Kubernetes-based platform. The focus will be on leveraging various technologies to build, deploy, and manage microservices efficiently. We will cover Knative, Hashicorp Vault, and Confluent Cloud, highlighting their core capabilities and how they contribute to an overall micro-services ecosystem.  All code references in this article are available at [GitHub](https://github.com/pksurferdad/knative-microservices).  The article assumes a basic working knowledge of kubernetes.
+In this article, we will explore the development, implementation, and deployment of microservices using Knative, a powerful Kubernetes-based platform. The focus will be on leveraging various technologies to build, deploy, and manage microservices efficiently. We will cover Knative, Hashicorp Vault, and Confluent Cloud, highlighting their core capabilities and how they contribute to an overall micro-services ecosystem.  All code references in this article are available at [GitHub](https://github.com/pksurferdad/knative-microservices).  This article assumes a basic working knowledge of kubernetes to be able to provision the required infrastructure components and to deploy the example microservices in this article.
 
 ### Introduction
 
@@ -10,11 +10,11 @@ The following is a brief introduction into each of the components we will be dis
 
 #### What are Microservices?
 
-By now, microservice architectures are clearly defined and understood, but here is a brief definition to get us started.  Microservices are a design approach where a single application is composed of many loosely coupled and independently deployable services. Each service typically represents a specific business function and can be developed, deployed, and scaled independently. The benefits of using a microservices architecture include improved fault isolation, more straightforward deployment, and the ability to use different technologies for different services.
+By now, microservice architectures are clearly defined and understood, but here is a brief definition to get us started.  Microservices are a design approach where a single application is composed of many loosely coupled and independently deployable services. Each service typically represents a specific business function and can be developed, deployed, and scaled independently. The benefits of using a microservices architecture include improved fault isolation, more straightforward deployment, and the ability to use different technologies for different services and purposes.
 
 #### Knative
 
-Knative is an open-source platform that extends Kubernetes to provide a set of middleware components necessary for building modern, container and service based applications. It focuses on simplifying the deployment of serverless and event-driven applications. The core components of Knative are Serving, for managing the services and Eventing, for providing cloud event and messaging support. These components help developers create scalable and manageable applications by handling auto-scaling, revision management, and event-driven workflows without having to worry about underlying infrastructure.
+Knative is an open-source platform that extends Kubernetes to provide a set of middleware components necessary for building modern, container and service based applications. It focuses on simplifying the deployment of serverless and event-driven applications. The core components of Knative are Serving, for managing the services and Eventing, for providing cloud event and messaging support. These components help developers create scalable and manageable applications by handling auto-scaling, revision management, and event-driven workflows without having to worry about the underlying infrastructure.
 
 #### Hashicorp Vault
 
@@ -24,7 +24,7 @@ Hashicorp Vault is a tool for securely accessing secrets, such as API keys, pass
 
 Confluent Cloud is a fully managed event streaming platform based on Apache Kafka. It enables the real-time streaming of data and integrates seamlessly with other cloud services. Core components of Confluent Cloud include Kafka clusters, connectors for data integration, and stream processing capabilities. Confluent Cloud supports building event-driven microservices by providing a reliable and scalable event streaming backbone.  This article will demonstrate how to use Confluent Cloud as the event streaming backbone for event driven Knative services.
 
-In this article, we will delve into each of these technologies, demonstrating how to integrate them into a microservices based ecosystem using Knative. We will start by understanding the basics of Knative and proceed to set up our environment, build and deploy a microservice, handle events, explore advanced features, and finally, look at a real-world case study and best practices. Let’s get started!
+In this article, we will delve into each of these technologies, demonstrating how to integrate them into a microservices based ecosystem using Knative. We will start by understanding the basics of Knative and proceed to set up our environment, build and deploy a microservice, handle events, explore advanced features, and finally, look at a real-world case study. Let’s get started!
 
 ### Section 1: Understanding the Basics
 1. **What is Knative?**
@@ -60,7 +60,7 @@ Let's start with setting up the required infrastructure components to deploy, ex
    
    We will utilize [AWS EKS](https://aws.amazon.com/eks/) to host our infrastructure components on Kubernetes (K8s).  The simplest method to create a k8s cluster on AWS is to utilize [eksctl](https://eksctl.io/) following this [guidance](https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html) from AWS.  
    
-   Below is a sample `eksctl` manifest to create and EKS cluster with an associated managed node group.
+   Below is a sample `eksctl` manifest to create and EKS cluster with an associated managed node group for running our workloads.
 
 ```
 
@@ -146,7 +146,7 @@ Follow this [guidance](https://knative.dev/docs/install/yaml-install/serving/ins
 * Configure `Real DNS` to allow your Knative Services to be accessed outside of the k8s cluster.  We'll use `knative.example.com` as the sample domain name, similar to the Knative docs.
 * Install `cert-manager` to provide certificate management utilizing `lets-encrypt` as the certificate issuer.  See this [guidance](https://knative.dev/docs/serving/encryption/external-domain-tls/) from Knative that provides additional insights into the settings below.
   * Install `cert-manager` following this [guidance](https://cert-manager.io/docs/installation/kubectl/)
-  * Configure the cert-manager integration to use wild card certs at namespace level.  You can use the following `patch` command to set which namespaces should use the certificate.
+  * Configure the cert-manager integration to use wild card certs at namespace level to simplify the use of secured certificates.  You can use the following `patch` command to set which namespaces should use the certificate.
 
 ```
 kubectl patch --namespace knative-serving configmap config-network -p '{"data": {"namespace-wildcard-cert-selector": "{\"matchExpressions\": [{\"key\":\"networking.knative.dev/disableWildcardCert\", \"operator\": \"In\", \"values\":[\"false\"]}]}"}}'
@@ -191,11 +191,11 @@ spec:
 
   * Finally, set `external-domain-tls` to `Enabled` in the `config-network` config map in the `knative-serving` namespace.
 
-  With these settings in place, Knative can now create a secured HTTPS end-point to securely execute your Knative services.  More details to follow as we create and deploy sample Knative services.
+  With these settings in place, Knative can now create a secured HTTPS end-point to securely execute your Knative services.  More details to follow as we create and deploy our sample Knative services.
 
 #### Knative Eventing
 
-Now, let's install Knative Eventing following this [general guidance](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/).  We'll add additional components later as we build out the examples that utilize Eventing capabilities.
+Now, let's install Knative Eventing following this [general guidance](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/).  We'll add additional components as needed as we build out the examples that utilize Eventing capabilities.
 
   * [Install](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#install-knative-eventing) the Knative CRD's and associated manifests to install the core Eventing components.
   * [Install](https://knative.dev/docs/install/yaml-install/eventing/install-eventing-with-yaml/#optional-install-a-broker-layer) the kafka broker to install the necessary components to integrate with a Kafka cluster.
@@ -324,7 +324,7 @@ In this section of the article, we will...
 
   1. build a simple python service
   2. create the YAML configuration to deploy the service
-  3. demonstrate how to call deployed service
+  3. demonstrate how to call the deployed service
   4. run the service on a schedule using a cronjob like resource from Knative called PingSource
 
 **Simple Python Service**
@@ -402,16 +402,16 @@ To deploy the service, apply the YAML file below.  Note that the `kind` is a ser
 ```mermaid
    graph TD    
     A[Knative Service] --> B[Configuration]
-    B --> C[PodAutoscaler]
-    C --> D[Ingress]
-    D --> F[K8s Service]
-    F --> G[Deployment]
-    G --> H[Pods]
+    A --> C[PodAutoscaler]
+    A --> D[Ingress]
+    A --> F[K8s Service]
+    A --> G[Deployment]
+    A --> H[Pods]
 ```
 
 Note the annotation `autoscaling.knative.dev/minScale: "0"` which allows a knative service to scale to 0, meaning the service will be terminated after a period of time, but will activate when a request is made against the service.  A nice way to save on Kubernetes resources.  `minScale` is one of many annotations that Knative provides to manage scaling of Knative services.  Others can be found in the Knative docs under [autoscaling](https://knative.dev/docs/serving/autoscaling/).
 
-Run the command `kubectl apply -f service.yaml` to deploy the service.
+Save the manifest as `service.yaml` and run the command `kubectl apply -f service.yaml` to deploy the service.
 
 ```
 apiVersion: serving.knative.dev/v1
@@ -511,7 +511,7 @@ spec:
 ### Section 4: Handling Events with Knative Eventing
 1. **Introduction to Knative Eventing**
 
-In this section of the article, we will focus on on how to implement Knative services that support the [cloudevents](https://cloudevents.io/) specification.  As mentioned previously, the diagram below illustrates the workflow of cloud events:
+In this section of the article, we will focus on on how to implement Knative services that support the [cloudevents](https://cloudevents.io/) specification.  As mentioned previously, the diagram below illustrates the workflow of cloud events in Knative:
 
 ```mermaid
 graph LR    
@@ -525,13 +525,13 @@ graph LR
     F --> G[Subscriber 1]
 ```
 
-We'll demonstrate the capabilities of Knative Eventing by implementing an event handler that publishes events which are picked up by an event subscriber.  All the resources mentioned in this section are available at [GitHub](https://github.com/pksurferdad/knative-microservices/tree/main/samples).  The pattern of event producer and event subscriber provides the foundation for implementing a variety of event based applications and services. Later in the article, we'll demonstrate a real-world example using this pattern.
+We'll demonstrate the capabilities of Knative Eventing by implementing an event handler that publishes events which are picked up by an event subscriber.  All the resources mentioned in this section are available at [GitHub](https://github.com/pksurferdad/knative-microservices/tree/main/samples).  The pattern of event producer and event subscriber provides the foundation for implementing a variety of event based applications and services. Later in the article, we'll elaborate on a real-world use-case using this pattern.
 
-2. **Event Producer**
+2. **Event Handler**
 
 **Build the Event Handler**
 
- Let's start with the `event handler` that can handle incoming event requests and publish the requests to Knative Eventing Broker which was created earlier in this article. 
+ Let's start with the `event handler` that can handle incoming event requests and publish the requests to the Knative Eventing Broker which we created earlier in this article. 
 
  Below is a simple `event handler` that validates if the required cloud event headers are included with the request and if they are included, publishes the event to the Knative Eventing Broker.  As mentioned previously, the Knative Eventing Broker is backed by a Kafka cluster hosted on Confluent Cloud that provides the necessary fault tolerant and guaranteed message delivery capabilities a mission critical eventing system would need.
 
@@ -543,7 +543,7 @@ We'll demonstrate the capabilities of Knative Eventing by implementing an event 
    kubectl get broker -n my-knative-services
    ```
 
-   * The service checks to ensure two cloud event headers, `ce_type` and `ce_source` are included in the request. These two cloud event attributes are an important component to how the events gets brokered to the desired target to handle the payload of the event
+   * The service checks to ensure two cloud event headers, `ce_type` and `ce_source` are included in the request. These two cloud event attributes are an important component to how the events gets brokered or routed to the desired target to handle the payload of the event
    * The service utilizes the `cloudevents` python library to build and structure the event to be published
 
  ```
@@ -658,8 +658,8 @@ Now, let's deploy the event handler to our Knative cluster.  Apply the manifest 
 
 Some things to note about the Knative service deployment:
 
-* The deployment is using Hashicorp Vault to maintain secrets and we can include the `broker_url` variable in the vault
-* The `minScale` annotation is set to `3` which indicates we want 3 load balanced services to run continuously.  This is desirable to handle concurrent requests hitting the Knative service.  Knative Serving also has the ability to scale up services based on Serving's built in [autoscaling](https://knative.dev/docs/serving/autoscaling/) capabilities.
+* The deployment is using Hashicorp Vault to maintain secrets and we can include the `broker_url` variable in vault
+* The `minScale` annotation is set to `3` which indicates we want 3 load balanced services to run continuously.  This is desirable to handle concurrent requests hitting the Knative service.  Knative Serving also has the ability to scale up services based on Knative Serving's built in [autoscaling](https://knative.dev/docs/serving/autoscaling/) capabilities.
 
 ```
 apiVersion: serving.knative.dev/v1
@@ -700,7 +700,7 @@ spec:
 
 Now that we have an event handler running, let's build the other side the eventing implementation and create the event subscriber.  The event subscriber will handle events and the associated payloads that are pushed to the subscriber. 
 
-Below is a simple event subscriber that we will build upon in a more real-world example toward the end of this article.
+Below is a simple event subscriber that will process the published event.
 
 ```
 import json
@@ -876,7 +876,7 @@ Earlier in this article, we installed the KafkaSink add-on. This add-on gives us
 
 **Configure the KafkaSink Add-on**
 
-Let's first configure and create a KafkaSink resource using the manifest below.  Before applying the manifest, you can manually create the `mytopic` topic in the Confluent Cloud cluster.
+Let's first configure and create a KafkaSink resource using the manifest below.  Before applying the manifest, you can manually create the topic `mytopic` in the Confluent Cloud cluster.
 
 ```
 apiVersion: eventing.knative.dev/v1alpha1
@@ -901,7 +901,7 @@ The `KafkaSink` URL should look something like `http://kafka-sink-ingress.knativ
 
 **Sample Service Using the KafkaSink Add-on**
 
-The Knative Service below is a variant of the `event subscriber` service, but with the addition of publishing an event to a Kafka topic using the `KafkaSink` resource we created above.  Note that the service takes an environment variable `KAFKA_SINK_URL` which is the URL we got from the above kubectl command.  
+The Knative Service below is a variant of the `event subscriber` service with the addition of publishing an event to a Kafka topic using the `KafkaSink` resource we created above.  Note that the service takes an environment variable `KAFKA_SINK_URL` which is the URL we got from the above kubectl command.  
 
 ```
 
@@ -1077,15 +1077,47 @@ graph LR
 
 **Data Provider** 
 
-The `data provider` is the component that connects to the data source, in Molecule's case, typically commodity trade or commodity pricing data, utilizing the data provider's API.  The data provider component fetches the data and calls the `event handler` including the `ce-source` and `ce-type` in the request header and the payload in the request body.
+The `data provider` is the component that connects to the data source, in Molecule's case, typically a commodity trade or commodity pricing data provider, utilizing the data provider's API.  The data provider component fetches the data from the provider and calls the `event handler` including the `ce-source` (e.g. my-exchange) and `ce-type` (e.g. my-trade) in the request header and the payload of the data in the request body.
 
 **Event Handler**
 
-As described in this article, the `event handler` will package up the cloud event and post the event to the Knative event broker which will route the event to the `event subscriber` based in the configuration in the Knative trigger.  
+As described in this article, the `event handler` will package up the cloud event and post the event to the Knative event broker which will route the event to the `event subscriber` based on the configuration in the Knative trigger. 
+
+```
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: transformation-service-1-trigger
+  namespace: my-knative-services
+spec:
+  broker: knative-kafka-broker
+  filter:
+    attributes:
+      type: my-trade
+      source: my-exchange
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: transformation-service-1
+```
 
 **Transformation Service**
 
-In this use case, the `transformation service` is the event subscriber that will receive the event with the payload from the `data provider` component.  Based on mapping configurations, the transformation service will transform attributes of the source payload to attribute formats and structures required by the Molecule SaaS application.  Utilizing the KafkaSink resource, the transformation services publishes the event to the sink end-point which persists the event to the configured Kafka topic hosted on our Confluent Cloud cluster.
+In this use case, the `transformation service` is the event subscriber which will receive the event with the payload from the `data provider` component.  Utilizing mapping configurations, the transformation service will transform attributes of the source payload to data attribute formats and structures required by the Molecule SaaS application.  Utilizing the KafkaSink resource, the transformation services publishes the event to the sink end-point which persists the event to the configured Kafka topic hosted on our Confluent Cloud cluster.
+
+```
+apiVersion: eventing.knative.dev/v1alpha1
+kind: KafkaSink
+metadata:
+   name: my-trade-sink
+   namespace: my-knative-services
+spec:
+   topic: my-trades
+   bootstrapServers:
+      - "GetFromConfluentCloud"
+   auth.secret.ref.name: ccloud
+```
 
 **Kafka Consumer**
 
@@ -1097,4 +1129,4 @@ The Molecule SaaS application then does its part with the data providing Commodi
 
 ### Conclusion
 
-Hopefully this article has provided the reader with some guidance and direction on how to implement, deploy, and manage Knative Services to support business critical event-based applications running on reliable technology.  The patterns outlined in this article can be used for a variety of use cases and business problems.  If you have any questions or run into any issues with the samples that are published in this article, feel free to reach out to me at paul@molecule.io or post an issue to the [GitHub project](https://github.com/pksurferdad/knative-microservices/issues).
+Hopefully this article has provided the reader with some guidance and direction on how to implement, deploy, and manage Knative Services to support business critical event-based applications.  The patterns outlined in this article can be used for a variety of use cases and business problems.  If you have any questions or run into any issues with the samples that are published in this article, feel free to reach out to me at paul@molecule.io or post an issue to the [GitHub project](https://github.com/pksurferdad/knative-microservices/issues).
